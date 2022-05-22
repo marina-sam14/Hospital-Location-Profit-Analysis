@@ -1,0 +1,752 @@
+# Marina Samprovalaki A.M 3180234
+# Department of Computer Science
+# Athens University of Economics and Business
+# p3180234@aueb.gr
+
+library(ggplot2)
+library(dplyr)
+library(psych)
+library(moments)
+library(gmodels)
+library(stats)
+library(car)
+library('leaps')
+library(corrplot)
+library(olsrr)
+library(nortest)
+library(lmtest)
+library("Hmisc")
+library(glmnet)
+library(tidyverse)
+library(caret)
+library(leaps)
+library(gt)  
+library(gtsummary)
+library(stargazer)
+library("texreg")
+library(gplots)
+library(flexmix)
+library(olsrr)
+library(sjPlot)
+library(sjmisc)
+library(sjlabelled)
+library("ggpubr")
+library('EnvStats')
+
+# import every time from Excel
+file = "dataset.txt"
+data = read.table(file, header = TRUE, sep = "", dec = " ")
+
+# Factor
+data$RURAL <- as.factor(ifelse(data$RURAL == 1, 'rural','non-rural'))
+table(data$RURAL)
+
+# Ekatontades * 100
+#data$MCDAYS <- data$MCDAYS * 100
+#data$TDAYS <- data$TDAYS * 100
+#data$PCREV <- data$PCREV * 100
+#data$NSAL <- data$NSAL * 100
+#data$FEXP <- data$FEXP * 100
+
+
+
+# Variable for days in home
+data$home <- data$TDAYS-data$MCDAYS
+
+
+# Variable for outgoings
+data$outgoings <- data$NSAL + data$FEXP
+
+# Variable for profit
+profit = data$PCREV - data$outgoings
+data['profit'] <- profit
+
+
+# Variable for finance
+data$finance <- as.factor(ifelse(data$PCREV - data$outgoings >0, 1,0))
+table(data$finance)
+
+#contingency table supplying information about the data set.
+describe(data)
+#producing result summaries of various model fitting functions
+summary(data)
+
+#Arithmetic Values
+#sd
+sd(data$BED)
+sd(data$MCDAYS)
+sd(data$TDAYS)
+sd(data$PCREV)
+sd(data$NSAL)
+sd(data$FEXP)
+sd(data$home)
+sd(data$outgoings)
+sd(data$profit)
+#skewness
+skewness(data$BED)
+skewness(data$MCDAYS)
+skewness(data$TDAYS)
+skewness(data$PCREV)
+skewness(data$NSAL)
+skewness(data$FEXP)
+skewness(data$home)
+skewness(data$outgoings)
+skewness(data$profit)
+#kurtosis
+kurtosis(data$BED)
+kurtosis(data$MCDAYS)
+kurtosis(data$TDAYS)
+kurtosis(data$PCREV)
+kurtosis(data$NSAL)
+kurtosis(data$FEXP)
+kurtosis(data$home)
+kurtosis(data$outgoings)
+kurtosis(data$profit)
+
+#Shapiro Test for arithmetic variables
+shapiro.test(data$BED)
+# From the output, the p-value < 0.05 implying that the distribution of the data are significantly different from normal distribution.
+shapiro.test(data$MCDAYS)
+# From the output, the p-value < 0.05 implying that the distribution of the data are significantly different from normal distribution.
+shapiro.test(data$home)
+# From the output, the p-value < 0.05 implying that the distribution of the data are significantly different from normal distribution.
+shapiro.test(data$TDAYS)
+# From the output, the p-value < 0.05 implying that the distribution of the data are significantly different from normal distribution.
+shapiro.test(data$PCREV)
+# From the output, the p-value < 0.05 implying that the distribution of the data are significantly different from normal distribution.
+shapiro.test(data$NSAL)
+# From the output, the p-value < 0.05 implying that the distribution of the data are significantly different from normal distribution.
+shapiro.test(data$FEXP)
+# From the output, the p-value < 0.05 implying that the distribution of the data are significantly different from normal distribution.
+shapiro.test(data$outgoings)
+# From the output, the p-value < 0.05 implying that the distribution of the data are significantly different from normal distribution.
+shapiro.test(data$profit)
+# From the output, the p-value < 0.05 implying that the distribution of the data are significantly different from normal distribution.
+
+
+#Kolmogorov-Smirnov Test for arithmetic variables
+ks.test(data$BED,"pnorm")
+# p-value < 0.05, we have sufficient evidence to say that the sample data does not come from a normal distribution.
+ks.test(data$MCDAYS,"pnorm")
+# p-value < 0.05, we have sufficient evidence to say that the sample data does not come from a normal distribution.
+ks.test(data$home,"pnorm")
+# p-value < 0.05, we have sufficient evidence to say that the sample data does not come from a normal distribution.
+ks.test(data$TDAYS,"pnorm")
+# p-value < 0.05, we have sufficient evidence to say that the sample data does not come from a normal distribution.
+ks.test(data$PCREV,"pnorm")
+# p-value < 0.05, we have sufficient evidence to say that the sample data does not come from a normal distribution.
+ks.test(data$NSAL,"pnorm")
+# p-value < 0.05, we have sufficient evidence to say that the sample data does not come from a normal distribution.
+ks.test(data$FEXP,"pnorm")
+# p-value < 0.05, we have sufficient evidence to say that the sample data does not come from a normal distribution.
+ks.test(data$outgoings,"pnorm")
+# p-value < 0.05, we have sufficient evidence to say that the sample data does not come from a normal distribution.
+ks.test(data$profit,"pnorm")
+# p-value < 0.05, we have sufficient evidence to say that the sample data does not come from a normal distribution.
+
+
+par(mfrow=c(3,3)) 
+
+# Density Plots for arithmetic variables
+ 
+d <- density(data$BED)
+plot(d, main="Bed Density")
+polygon(d, col="red", border="blue")
+
+d <- density(data$MCDAYS)
+plot(d, main="MCDAYS Density")
+polygon(d, col="red", border="blue")
+
+d <- density(data$home)
+plot(d, main="Days in home Density")
+polygon(d, col="red", border="blue")
+
+d <- density(data$PCREV)
+plot(d, main="PCREV Density")
+polygon(d, col="red", border="blue")
+
+d <- density(data$NSAL)
+plot(d, main="NSAL Density")
+polygon(d, col="red", border="blue")
+
+d <- density(data$FEXP)
+plot(d, main="FEXP Density")
+polygon(d, col="red", border="blue")
+
+
+d <- density(data$outgoings)
+plot(d, main="Outgoings Density")
+polygon(d, col="red", border="blue")
+
+d <- density(data$profit)
+plot(d, main="Profit Density")
+polygon(d, col="red", border="blue")
+
+d <- density(data$TDAYS)
+plot(d, main="TDAYS Density")
+polygon(d, col="red", border="blue")
+
+#QQ-Plots in Numerical variables
+qqnorm(data$BED, main='BED')
+qqline(data$BED)
+qqnorm(data$MCDAYS, main='MCDAYS')
+qqline(data$MCDAYS)
+qqnorm(data$home, main='Home Days')
+qqline(data$home)
+qqnorm(data$PCREV, main='PCREV')
+qqline(data$PCREV)
+qqnorm(data$NSAL, main='NSAL')
+qqline(data$NSAL)
+qqnorm(data$FEXP, main='FEXP')
+qqline(data$FEXP)
+qqnorm(data$outgoings, main='Outgoings')
+qqline(data$outgoings)
+qqnorm(data$profit, main='Profit')
+qqline(data$profit)
+qqnorm(data$TDAYS, main='TDAYS')
+qqline(data$TDAYS)
+
+
+#Boxplots in numerical variables
+
+boxplot(data$BED,main = "BED",col="blue")
+boxplot(data$MCDAYS,main = "MCDAYS",col="yellow")
+boxplot(data$home,main = "home",col="red")
+boxplot(data$PCREV,main = "PCREV",col="green")
+boxplot(data$NSAL,main = "NSAL",col="pink")
+boxplot(data$FEXP,main = "FEXP",col="purple")
+boxplot(data$outgoings,main = "outgoings",col="yellow")
+boxplot(data$profit,main = "profit",col="black")
+boxplot(data$TDAYS,main = "TDAYS",col="orange")
+
+# Pearson Correlation Test for numerical variables
+
+# Firstly we are going to isolate numerical values in a new data frame
+
+num_data<-cbind(data)
+num_data<-data[ , -which(names(num_data) %in% c("RURAL","finance"))]
+
+# Then we are going to use the Pearson Correlation Test to see which values influence the salary.
+
+num_data_corr <-as.matrix((cor(num_data)))
+
+corrplot(cor(num_data_corr), addCoef.col = 1, number.cex = 0.5)
+
+par(mfrow=c(1,2)) 
+#Plots in categorical variables
+plot(data$RURAL,col="blue",main="Areas")
+plot(data$finance,col="green",main="Finance")
+
+#Barplots
+ggplot(data) +
+  aes(x = RURAL, fill = finance) +
+  geom_bar(position = "dodge")
+
+
+
+#Boxplots  and RURAL
+ggplot(data, aes(x = RURAL, y = MCDAYS, fill = RURAL)) +  
+     geom_boxplot()
+
+
+ggplot(data, aes(x = RURAL, y = NSAL, fill = RURAL)) +  
+  geom_boxplot()
+
+ggplot(data, aes(x = RURAL, y = PCREV, fill = RURAL)) +  
+  geom_boxplot()
+
+
+ggplot(data, aes(x = RURAL, y = outgoings, fill = RURAL)) +  
+  geom_boxplot()
+
+ggplot(data, aes(x = RURAL, y = home, fill = RURAL)) +  
+  geom_boxplot()
+
+ggplot(data, aes(x = RURAL, y = FEXP, fill = RURAL)) +  
+  geom_boxplot()
+
+ggplot(data, aes(x = RURAL, y = BED, fill = RURAL)) +  
+  geom_boxplot()
+
+ggplot(data, aes(x = RURAL, y = profit, fill = RURAL)) +  
+  geom_boxplot()
+
+
+#Boxplots  and finance DEN TA EXW PERASEI
+ggplot(data, aes(x = finance, y = MCDAYS, fill = finance)) +  
+  geom_boxplot()
+
+
+ggplot(data, aes(x = finance, y = NSAL, fill = finance)) +  
+  geom_boxplot()
+
+ggplot(data, aes(x = finance, y = PCREV, fill = finance)) +  
+  geom_boxplot()
+
+
+ggplot(data, aes(x = finance, y = outgoings, fill = finance)) +  
+  geom_boxplot()
+
+ggplot(data, aes(x = finance, y = home, fill = finance)) +  
+  geom_boxplot()
+
+ggplot(data, aes(x = finance, y = FEXP, fill = finance)) +  
+  geom_boxplot()
+
+ggplot(data, aes(x = finance, y = BED, fill = finance)) +  
+  geom_boxplot()
+
+ggplot(data, aes(x = finance, y = profit, fill = finance)) +  
+  geom_boxplot()
+
+
+
+
+# Chi Test between categorical variables
+chisq.test(data$finance, data$RURAL, correct=FALSE)
+#We have a chi-squared value of  0.002312. Since we get a p-Value> 0.05, we cannot reject the null hypothesis, so we conclude that the two variables are not in fact dependent.
+
+
+
+#Relationship based on RURAL
+kruskal.test(PCREV ~ RURAL, data = data)
+#p-value < 0.05, there are significant differences between the treatment groups.
+kruskal.test(outgoings ~ RURAL, data = data)
+#p-value < 0.05, there are significant differences between the treatment groups.
+kruskal.test(home ~ RURAL, data = data)
+#p-value < 0.05, there are significant differences between the treatment groups.
+kruskal.test(MCDAYS ~ RURAL, data = data)
+#p-value > 0.05,  there are no significant differences between the treatment groups.
+kruskal.test(FEXP ~ RURAL, data = data)
+#p-value > 0.05, we cannot conclude that there are significant differences between the treatment groups.
+kruskal.test(NSAL ~ RURAL, data = data)
+#p-value < 0.05, there are significant differences between the treatment groups.
+kruskal.test(BED ~ RURAL, data = data)
+#p-value > 0.05, we cannot conclude that there are significant differences between the treatment groups.
+kruskal.test(profit ~ RURAL, data = data)
+#p-value < 0.05, there are significant differences between the treatment groups.
+kruskal.test(BED ~ RURAL, data = data)
+#p-value < 0.05, there are significant differences between the treatment groups.
+
+#Variances
+leveneTest(PCREV ~ RURAL, data = data)
+#p-value > 0.05,  the variances are equal
+leveneTest(outgoings ~ RURAL, data = data)
+#p-value > 0.05,  the variances are equal
+leveneTest(home ~ RURAL, data = data)
+#p-value > 0.05,  the variances are equal
+leveneTest(MCDAYS ~ RURAL, data = data)
+#p-value > 0.05,  the variances are equal
+leveneTest(FEXP ~ RURAL, data = data)
+#p-value > 0.05,  the variances are equal
+leveneTest(NSAL ~ RURAL, data = data)
+#p-value < 0.05,  the variances are not equal
+leveneTest(profit ~ RURAL, data = data)
+#p-value > 0.05,  the variances are equal
+
+
+par(mfrow=c(3,3)) 
+
+#ErrorBars
+plotmeans(MCDAYS ~ RURAL, data, connect=F, xlab='')
+plotmeans(PCREV ~ RURAL, data, connect=F, xlab='')
+plotmeans(outgoings ~ RURAL, data, connect=F, xlab='')
+plotmeans(BED ~ RURAL, data, connect=F, xlab='')
+plotmeans(home ~ RURAL, data, connect=F, xlab='')
+plotmeans(proft ~ RURAL, data, connect=F, xlab='')
+plotmeans(NSAL ~ RURAL, data, connect=F, xlab='')
+plotmeans(FEXP ~ RURAL, data, connect=F, xlab='')
+plotmeans(TDAYS ~ RURAL, data, connect=F, xlab='')
+
+
+#Relationship based on RURAL
+kruskal.test(PCREV ~ finance, data = data)
+#p-value < 0.05, there are significant differences between the treatment groups.
+kruskal.test(outgoings ~ finance, data = data)
+#p-value > 0.05, there are no significant differences between the treatment groups.
+kruskal.test(home ~ finance, data = data)
+#p-value > 0.05, there are no significant differences between the treatment groups.
+kruskal.test(MCDAYS ~ finance, data = data)
+#p-value > 0.05, there are no significant differences between the treatment groups.
+kruskal.test(FEXP ~ finance, data = data)
+#p-value > 0.05, there are no significant differences between the treatment groups.
+kruskal.test(NSAL ~ finance, data = data)
+#p-value > 0.05, there are no significant differences between the treatment groups.
+kruskal.test(BED ~ finance, data = data)
+#p-value > 0.05, there are no significant differences between the treatment groups.
+kruskal.test(profit ~ finance, data = data)
+#p-value < 0.05, there are significant differences between the treatment groups.
+kruskal.test(BED ~ finance, data = data)
+#p-value > 0.05, there are no significant differences between the treatment groups.
+
+
+#As for the next step, we have to check the normality of the variables for every category of the RURAL variable. So we have to 
+#isolate the data for every category and do shapiro tests. 
+
+par(mfrow=c(1,2)) 
+
+#Normality Test for PCREV and RURAL=rural
+t1 <- subset(data,  RURAL == "rural", PCREV,
+             drop = TRUE)
+qqnorm(t1,main = "PCREV for rural Areas")
+qqline(t1)
+shapiro.test(t1)
+# p-value < 0.05 implying that the distribution of the data are significantly different from the normal distribution. 
+
+#Normality Test for PCREV and RURAL=non-rural
+t2 <- subset(data,  RURAL == "non-rural", PCREV,
+             drop = TRUE)
+qqnorm(t2,main = "PCREV for non-rural Areas")
+qqline(t2)
+shapiro.test(t2)
+# p-value > 0.05 implying that the distribution of the data are not significantly different from the normal distribution. So, we can assume the normality.
+
+#t1 and t2 do not both follow normal distribution, so we have to do Wilcoxon Test to check their medians. We used paired=FALSE because they do not have the same length
+#Medians' equality Test
+wilcox.test(t1, t2, paired = FALSE)
+#The p-value < 0.05 We can conclude that their medians are significantly different from each other
+
+#Boxplot 
+ggboxplot(data, x = "RURAL", y = "PCREV", 
+          color = "RURAL", palette = c("#00AFBB", "#E7B800"),
+          order = c("rural", "non-rural"),
+          ylab = "PCREV", xlab = "Area")
+
+#Normality Test for outgoings and RURAL=rural
+t3 <- subset(data,  RURAL == "rural", outgoings,
+             drop = TRUE)
+qqnorm(t3,main = "Outgoings for rural Areas")
+qqline(t3)
+shapiro.test(t3)
+# p-value < 0.05 implying that the distribution of the data are significantly different from the normal distribution. 
+
+t4 <- subset(data,  RURAL == "non-rural", outgoings,
+             drop = TRUE)
+qqnorm(t4,main = "Outgoings for non-rural Areas")
+qqline(t4)
+shapiro.test(t4)
+# p-value > 0.05 implying that the distribution of the data are not significantly different from the normal distribution. So, we can assume the normality.
+
+wilcox.test(t3, t4, paired = FALSE)
+#The p-value < 0.05 We can conclude that their medians are significantly different from each other
+
+#Boxplot 
+ggboxplot(data, x = "RURAL", y = "outgoings", 
+          color = "RURAL", palette = c("#00AFBB", "#E7B800"),
+          order = c("rural", "non-rural"),
+          ylab = "outgoings", xlab = "Area")
+
+
+#Normality Test for profit and RURAL=rural
+t5 <- subset(data,  RURAL == "rural", profit,
+             drop = TRUE)
+qqnorm(t5,main = "Profit for rural Areas")
+qqline(t5)
+shapiro.test(t5)
+# p-value < 0.05 implying that the distribution of the data are significantly different from the normal distribution. 
+
+t6 <- subset(data,  RURAL == "non-rural", profit,
+             drop = TRUE)
+qqnorm(t6,main = "Profit for rural Areas")
+qqline(t6)
+shapiro.test(t6)
+# p-value > 0.05 distribution of the data are not significantly different from the normal distribution. So, we can assume the normality.
+
+wilcox.test(t5, t6, paired = FALSE)
+#The p-value < 0.05 We can conclude that their medians are significantly different from each other
+
+#Boxplot 
+ggboxplot(data, x = "RURAL", y = "profit", 
+          color = "RURAL", palette = c("#00AFBB", "#E7B800"),
+          order = c("rural", "non-rural"),
+          ylab = "profit", xlab = "Area")
+
+
+
+
+#Linear Models
+#Model 1 || PCREV
+model1 <- lm(PCREV~BED+MCDAYS+home+outgoings+RURAL+finance, data=data)
+names(model1)
+summary(model1)
+
+#Normality Test
+shapiro.test(model1$res)
+# p-value < 0.05 implying that the distribution of the data are significantly different from the normal distribution. 
+
+durbinWatsonTest(model1)
+#p-value < 0.05, the residuals are autocorrelated.
+#Rejected
+ncvTest(model1) 
+#p-value > 0.05, heteroscedasticity is not present
+
+#Plots
+plot(model1)
+plot(model1$residuals,type = 'l')
+acf(model1$residuals)
+
+model1 <- boxCox(model1, family="yjPower", plotit = TRUE)
+plot(model1)
+
+shuffled_data= data[sample(1:nrow(data)), ]
+model1 <- lm(PCREV~BED+MCDAYS+home+outgoings+RURAL+finance, data=shuffled_data)
+summary(model1)
+
+
+#Centralizing
+model1 <- lm(PCREV~scale(BED,scale = F)+scale(MCDAYS,scale = F)+scale(home,scale = F)+scale(outgoings,scale = F)+RURAL+finance, data=shuffled_data)
+names(model1)
+summary(model1)
+
+plot(model1)
+plot(model1$residuals,type = 'l')
+acf(model1$residuals)
+
+tab_model(model1)
+
+
+#Subset Selection
+model1 <- regsubsets(PCREV~scale(BED,scale = F)+scale(MCDAYS,scale = F)+scale(home,scale = F)+scale(outgoings,scale = F)+RURAL+finance, data=shuffled_data, nvmax = 5)
+res.sum <- summary(model1)
+data.frame(
+  Adj.R2 = which.max(res.sum$adjr2),
+  CP = which.min(res.sum$cp),
+  BIC = which.min(res.sum$bic)
+)
+res.sum$which
+
+#we have different "best" models depending on which metrics we consider. We need additional strategies.
+par(mfrow = c(2,2))
+plot(res.sum$rss, xlab = "Number of Variables", ylab = "RSS", type = "l")
+plot(res.sum$adjr2, xlab = "Number of Variables", ylab = "Adjusted RSq", type = "l")
+
+# We will now plot a red dot to indicate the model with the largest adjusted R^2 statistic.
+# The which.max() function can be used to identify the location of the maximum point of a vector
+adj_r2_max = which.max(res.sum$adjr2) # 11
+
+# The points() command works like the plot() command, except that it puts points 
+# on a plot that has already been created instead of creating a new plot
+points(adj_r2_max, res.sum$adjr2[adj_r2_max], col ="red", cex = 2, pch = 20)
+
+# We'll do the same for C_p and BIC, this time looking for the models with the SMALLEST statistic
+plot(res.sum$cp, xlab = "Number of Variables", ylab = "Cp", type = "l")
+cp_min = which.min(res.sum$cp) # 10
+points(cp_min, res.sum$cp[cp_min], col = "red", cex = 2, pch = 20)
+
+plot(res.sum$bic, xlab = "Number of Variables", ylab = "BIC", type = "l")
+bic_min = which.min(res.sum$bic) # 6
+points(bic_min, res.sum$bic[bic_min], col = "red", cex = 2, pch = 20)
+#We see that according to BIC, the best performer is the model with 4 variables. According to  Cp , 5 variables. Adjusted  R2  suggests that 5 might be best. Again, no one measure is going to give us an entirely accurate picture... 
+#but they all agree that a model with 4 or fewer predictors is insufficient, and a model with more than 6 is overfitting.
+
+#stepwise regression
+intercept_only <- lm(PCREV ~ 1, data=shuffled_data)
+
+#define model with all predictors
+all <- lm(PCREV~scale(BED,scale = F)+scale(MCDAYS,scale = F)+scale(home,scale = F)+scale(outgoings,scale = F)+RURAL+finance, data=shuffled_data)
+
+#perform backward stepwise regression
+both <- step(intercept_only, direction='both', scope=formula(all), trace=0)
+
+#view results of backward stepwise regression
+both$anova
+both$coefficients
+
+#We have to remove RURAL=rural rows as the subset models suggested
+t1 <- subset(shuffled_data, shuffled_data$RURAL == "rural")
+
+model1<-lm(PCREV~scale(BED,scale = F)+scale(MCDAYS,scale = F)+scale(home,scale = F)+scale(outgoings,scale = F)+finance, data=t1)
+
+summary(model1)
+confint(model1)
+
+
+plot(model1)
+plot(model1$residuals,type = 'l')
+acf(model1$residuals)
+
+tab_model(model1)
+
+
+
+#WS EDW CHECKED
+
+################################################3
+
+#Model 2 || outgoings
+model2 <- lm(outgoings~MCDAYS+home+PCREV+RURAL+finance, data=data)
+names(model2)
+summary(model2)
+
+#Normality Test
+shapiro.test(model2$res)
+# p-value > 0.05 implying that the distribution of the data are not significantly different from the normal distribution. 
+durbinWatsonTest(model2)
+#p-value > 0.05, the residuals are not autocorrelated.
+ncvTest(model2) 
+# pvalue < 0.05, we reject the null hypothesis and conclude that this regression model violates the homoscedasticity assumption
+
+plot(model2)
+plot(model2$residuals,type = 'l')
+acf(model2$residuals)
+
+
+
+
+model2 <- lm(log(outgoings)~MCDAYS+home+PCREV+RURAL+finance, data=shuffled_data)
+summary(model2)
+
+tab_model(model2)
+
+
+
+#Subset Selection
+model2 <- regsubsets(log(outgoings)~BED+MCDAYS+home+PCREV+RURAL+finance, data=shuffled_data, nvmax = 5)
+res.sum <- summary(model2)
+data.frame(
+  Adj.R2 = which.max(res.sum$adjr2),
+  CP = which.min(res.sum$cp),
+  BIC = which.min(res.sum$bic)
+)
+res.sum$which
+
+#we have different "best" models depending on which metrics we consider. We need additional strategies.
+par(mfrow = c(2,2))
+plot(res.sum$rss, xlab = "Number of Variables", ylab = "RSS", type = "l")
+plot(res.sum$adjr2, xlab = "Number of Variables", ylab = "Adjusted RSq", type = "l")
+
+# We will now plot a red dot to indicate the model with the largest adjusted R^2 statistic.
+# The which.max() function can be used to identify the location of the maximum point of a vector
+adj_r2_max = which.max(res.sum$adjr2) # 11
+
+# The points() command works like the plot() command, except that it puts points 
+# on a plot that has already been created instead of creating a new plot
+points(adj_r2_max, res.sum$adjr2[adj_r2_max], col ="red", cex = 2, pch = 20)
+
+# We'll do the same for C_p and BIC, this time looking for the models with the SMALLEST statistic
+plot(res.sum$cp, xlab = "Number of Variables", ylab = "Cp", type = "l")
+cp_min = which.min(res.sum$cp) # 10
+points(cp_min, res.sum$cp[cp_min], col = "red", cex = 2, pch = 20)
+
+plot(res.sum$bic, xlab = "Number of Variables", ylab = "BIC", type = "l")
+bic_min = which.min(res.sum$bic) # 6
+points(bic_min, res.sum$bic[bic_min], col = "red", cex = 2, pch = 20)
+#We see that according to BIC, the best performer is the model with 4 variables. According to  Cp , 5 variables. Adjusted  R2  suggests that 5 might be best. Again, no one measure is going to give us an entirely accurate picture... 
+#but they all agree that a model with 4 or fewer predictors is insufficient, and a model with more than 6 is overfitting.
+
+
+intercept_only <- lm(log(outgoings) ~ 1, data=shuffled_data)
+
+#define model with all predictors
+all <- lm(log(outgoings)~BED+MCDAYS+home+PCREV+RURAL+finance, data=shuffled_data)
+
+#perform backward stepwise regression
+both <- step(intercept_only, direction='both', scope=formula(all), trace=0)
+
+#view results of backward stepwise regression
+both$anova
+both$coefficients
+
+model2 <- lm(log(outgoings)~PCREV+MCDAYS+home+finance, data=shuffled_data)
+summary(model2)
+confint(model2)
+
+plot(model2)
+plot(model2$residuals,type = 'l')
+acf(model2$residuals)
+
+tab_model(model2)
+
+
+
+
+##############################################################
+
+model3 <- lm(profit~BED+MCDAYS+home+PCREV+RURAL+finance+outgoings, data=data)
+names(model3)
+summary(model3)
+
+##elegxos kanonikothtas
+shapiro.test(model3$res)
+# p-value < 0.05 implying that the distribution of the data are significantly different from the normal distribution. 
+durbinWatsonTest(model3)
+#p-value > 0.05, the residuals are not autocorrelated.
+ncvTest(model3) 
+# pvalue > 0.05, this regression model does not violate the homoscedasticity assumption
+
+plot(model3)
+plot(model3$residuals,type = 'l')
+acf(model3$residuals)
+
+model3 <- boxCox(model3, family="yjPower", plotit = TRUE)
+
+model3 <- lm(log(profit)~PCREV+RURAL+finance+outgoings, data=shuffled_data)
+summary(model3)
+
+#Centralizing
+model3 <- lm(log(profit)~scale(BED,scale = F)+scale(MCDAYS,scale = F)+scale(home,scale = F)+scale(PCREV,scale = F)+RURAL+finance+scale(outgoings,scale = F), data=shuffled_data)
+names(model3)
+summary(model3)
+
+plot(model3)
+plot(model3$residuals,type = 'l')
+acf(model3$residuals)
+
+tab_model(model3)
+
+model3 <- regsubsets(log(profit)~scale(PCREV,scale = F)+RURAL+finance+scale(outgoings,scale = F), data=shuffled_data, nvmax = 5)
+res.sum <- summary(model3)
+data.frame(
+  Adj.R2 = which.max(res.sum$adjr2),
+  CP = which.min(res.sum$cp),
+  BIC = which.min(res.sum$bic)
+)
+res.sum$which
+
+
+par(mfrow = c(2,2))
+plot(res.sum$rss, xlab = "Number of Variables", ylab = "RSS", type = "l")
+plot(res.sum$adjr2, xlab = "Number of Variables", ylab = "Adjusted RSq", type = "l")
+
+# We will now plot a red dot to indicate the model with the largest adjusted R^2 statistic.
+# The which.max() function can be used to identify the location of the maximum point of a vector
+adj_r2_max = which.max(res.sum$adjr2) # 11
+
+# The points() command works like the plot() command, except that it puts points 
+# on a plot that has already been created instead of creating a new plot
+points(adj_r2_max, res.sum$adjr2[adj_r2_max], col ="red", cex = 2, pch = 20)
+
+# We'll do the same for C_p and BIC, this time looking for the models with the SMALLEST statistic
+plot(res.sum$cp, xlab = "Number of Variables", ylab = "Cp", type = "l")
+cp_min = which.min(res.sum$cp) # 10
+points(cp_min, res.sum$cp[cp_min], col = "red", cex = 2, pch = 20)
+
+plot(res.sum$bic, xlab = "Number of Variables", ylab = "BIC", type = "l")
+bic_min = which.min(res.sum$bic) # 6
+points(bic_min, res.sum$bic[bic_min], col = "red", cex = 2, pch = 20)
+#We see that according to BIC, the best performer is the model with 4 variables. According to  Cp , 5 variables. Adjusted  R2  suggests that 5 might be best. Again, no one measure is going to give us an entirely accurate picture... 
+#but they all agree that a model with 4 or fewer predictors is insufficient, and a model with more than 6 is overfitting.
+
+
+intercept_only <- lm(log(profit) ~ 1, data=shuffled_data)
+
+#define model with all predictors
+all <- lm(log(profit)~scale(PCREV,scale = F)+scale(outgoings,scale = F)+finance, data=shuffled_data)
+
+#perform backward stepwise regression
+both <- step(intercept_only, direction='both', scope=formula(all), trace=0)
+
+#view results of backward stepwise regression
+both$anova
+both$coefficients
+
+model3 <- lm(log(profit)~scale(PCREV,scale = F)+scale(outgoings,scale = F), data=shuffled_data)
+summary(model3)
+confint(model3)
+
+plot(model3)
+plot(model3$residuals,type = 'l')
+acf(model3$residuals)
+
+tab_model(model3)
+
