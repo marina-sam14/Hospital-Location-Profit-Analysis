@@ -3,6 +3,8 @@
 # Athens University of Economics and Business
 # p3180234@aueb.gr
 
+
+#Import libraries
 library(ggplot2)
 library(dplyr)
 library(psych)
@@ -12,42 +14,27 @@ library(stats)
 library(car)
 library('leaps')
 library(corrplot)
-library(olsrr)
 library(nortest)
 library(lmtest)
-library("Hmisc")
 library(glmnet)
 library(tidyverse)
 library(caret)
 library(leaps)
-library(gt)  
-library(gtsummary)
-library(stargazer)
 library("texreg")
 library(gplots)
-library(flexmix)
-library(olsrr)
 library(sjPlot)
 library(sjmisc)
 library(sjlabelled)
 library("ggpubr")
-library('EnvStats')
 
-# import every time from Excel
+
+# import our dataset from txt file named dataset.txt
 file = "dataset.txt"
 data = read.table(file, header = TRUE, sep = "", dec = " ")
 
-# Factor
+# Factor RURAL because it is a categorical variable
 data$RURAL <- as.factor(ifelse(data$RURAL == 1, 'rural','non-rural'))
 table(data$RURAL)
-
-# Ekatontades * 100
-#data$MCDAYS <- data$MCDAYS * 100
-#data$TDAYS <- data$TDAYS * 100
-#data$PCREV <- data$PCREV * 100
-#data$NSAL <- data$NSAL * 100
-#data$FEXP <- data$FEXP * 100
-
 
 
 # Variable for days in home
@@ -66,7 +53,7 @@ data['profit'] <- profit
 data$finance <- as.factor(ifelse(data$PCREV - data$outgoings >0, 1,0))
 table(data$finance)
 
-#contingency table supplying information about the data set.
+#contingency table supplying information about the dataset
 describe(data)
 #producing result summaries of various model fitting functions
 summary(data)
@@ -102,6 +89,8 @@ kurtosis(data$FEXP)
 kurtosis(data$home)
 kurtosis(data$outgoings)
 kurtosis(data$profit)
+
+#Normality Tests
 
 #Shapiro Test for arithmetic variables
 shapiro.test(data$BED)
@@ -144,6 +133,7 @@ ks.test(data$outgoings,"pnorm")
 ks.test(data$profit,"pnorm")
 # p-value < 0.05, we have sufficient evidence to say that the sample data does not come from a normal distribution.
 
+#Shapiro and Kolmogorov-Smirnov returned same results, so there is no variable that follows normal distribution.
 
 par(mfrow=c(3,3)) 
 
@@ -221,19 +211,22 @@ boxplot(data$TDAYS,main = "TDAYS",col="orange")
 
 # Pearson Correlation Test for numerical variables
 
-# Firstly we are going to isolate numerical values in a new data frame
+# Firstly we are going to isolate numerical values in a new data frame called num_data
 
 num_data<-cbind(data)
 num_data<-data[ , -which(names(num_data) %in% c("RURAL","finance"))]
 
-# Then we are going to use the Pearson Correlation Test to see which values influence the salary.
+# Then we are going to use the Pearson Correlation Test to see which values have any relationship between them
 
 num_data_corr <-as.matrix((cor(num_data)))
 
 corrplot(cor(num_data_corr), addCoef.col = 1, number.cex = 0.5)
 
 par(mfrow=c(1,2)) 
+
 #Plots in categorical variables
+
+#Plots
 plot(data$RURAL,col="blue",main="Areas")
 plot(data$finance,col="green",main="Finance")
 
@@ -244,7 +237,7 @@ ggplot(data) +
 
 
 
-#Boxplots  and RURAL
+#Boxplots for every numerical value combined with RURAL
 ggplot(data, aes(x = RURAL, y = MCDAYS, fill = RURAL)) +  
      geom_boxplot()
 
@@ -272,43 +265,14 @@ ggplot(data, aes(x = RURAL, y = profit, fill = RURAL)) +
   geom_boxplot()
 
 
-#Boxplots  and finance DEN TA EXW PERASEI
-ggplot(data, aes(x = finance, y = MCDAYS, fill = finance)) +  
-  geom_boxplot()
-
-
-ggplot(data, aes(x = finance, y = NSAL, fill = finance)) +  
-  geom_boxplot()
-
-ggplot(data, aes(x = finance, y = PCREV, fill = finance)) +  
-  geom_boxplot()
-
-
-ggplot(data, aes(x = finance, y = outgoings, fill = finance)) +  
-  geom_boxplot()
-
-ggplot(data, aes(x = finance, y = home, fill = finance)) +  
-  geom_boxplot()
-
-ggplot(data, aes(x = finance, y = FEXP, fill = finance)) +  
-  geom_boxplot()
-
-ggplot(data, aes(x = finance, y = BED, fill = finance)) +  
-  geom_boxplot()
-
-ggplot(data, aes(x = finance, y = profit, fill = finance)) +  
-  geom_boxplot()
-
-
-
+#Relationship Tests
 
 # Chi Test between categorical variables
 chisq.test(data$finance, data$RURAL, correct=FALSE)
-#We have a chi-squared value of  0.002312. Since we get a p-Value> 0.05, we cannot reject the null hypothesis, so we conclude that the two variables are not in fact dependent.
+#We have a chi-squared value of  0.002312. Since we get a p-Value> 0.05, we cannot reject the null hypothesis because there is not enough evidence to conclude that the variables are associated.
 
 
-
-#Relationship based on RURAL
+#Relationships based on RURAL and numerical variables
 kruskal.test(PCREV ~ RURAL, data = data)
 #p-value < 0.05, there are significant differences between the treatment groups.
 kruskal.test(outgoings ~ RURAL, data = data)
@@ -347,7 +311,7 @@ leveneTest(profit ~ RURAL, data = data)
 
 par(mfrow=c(3,3)) 
 
-#ErrorBars
+#ErrorBars for every numerical variable combined with RURAL 
 plotmeans(MCDAYS ~ RURAL, data, connect=F, xlab='')
 plotmeans(PCREV ~ RURAL, data, connect=F, xlab='')
 plotmeans(outgoings ~ RURAL, data, connect=F, xlab='')
@@ -358,26 +322,6 @@ plotmeans(NSAL ~ RURAL, data, connect=F, xlab='')
 plotmeans(FEXP ~ RURAL, data, connect=F, xlab='')
 plotmeans(TDAYS ~ RURAL, data, connect=F, xlab='')
 
-
-#Relationship based on RURAL
-kruskal.test(PCREV ~ finance, data = data)
-#p-value < 0.05, there are significant differences between the treatment groups.
-kruskal.test(outgoings ~ finance, data = data)
-#p-value > 0.05, there are no significant differences between the treatment groups.
-kruskal.test(home ~ finance, data = data)
-#p-value > 0.05, there are no significant differences between the treatment groups.
-kruskal.test(MCDAYS ~ finance, data = data)
-#p-value > 0.05, there are no significant differences between the treatment groups.
-kruskal.test(FEXP ~ finance, data = data)
-#p-value > 0.05, there are no significant differences between the treatment groups.
-kruskal.test(NSAL ~ finance, data = data)
-#p-value > 0.05, there are no significant differences between the treatment groups.
-kruskal.test(BED ~ finance, data = data)
-#p-value > 0.05, there are no significant differences between the treatment groups.
-kruskal.test(profit ~ finance, data = data)
-#p-value < 0.05, there are significant differences between the treatment groups.
-kruskal.test(BED ~ finance, data = data)
-#p-value > 0.05, there are no significant differences between the treatment groups.
 
 
 #As for the next step, we have to check the normality of the variables for every category of the RURAL variable. So we have to 
@@ -402,6 +346,8 @@ shapiro.test(t2)
 # p-value > 0.05 implying that the distribution of the data are not significantly different from the normal distribution. So, we can assume the normality.
 
 #t1 and t2 do not both follow normal distribution, so we have to do Wilcoxon Test to check their medians. We used paired=FALSE because they do not have the same length
+#We used paired=FALSE because the length ofthese two variables is different 
+
 #Medians' equality Test
 wilcox.test(t1, t2, paired = FALSE)
 #The p-value < 0.05 We can conclude that their medians are significantly different from each other
@@ -411,6 +357,8 @@ ggboxplot(data, x = "RURAL", y = "PCREV",
           color = "RURAL", palette = c("#00AFBB", "#E7B800"),
           order = c("rural", "non-rural"),
           ylab = "PCREV", xlab = "Area")
+
+
 
 #Normality Test for outgoings and RURAL=rural
 t3 <- subset(data,  RURAL == "rural", outgoings,
@@ -476,7 +424,7 @@ shapiro.test(model1$res)
 
 durbinWatsonTest(model1)
 #p-value < 0.05, the residuals are autocorrelated.
-#Rejected
+
 ncvTest(model1) 
 #p-value > 0.05, heteroscedasticity is not present
 
@@ -485,15 +433,19 @@ plot(model1)
 plot(model1$residuals,type = 'l')
 acf(model1$residuals)
 
-model1 <- boxCox(model1, family="yjPower", plotit = TRUE)
-plot(model1)
+#We tried to deal with non-normality
+
+#model1 <- boxCox(model1, family="yjPower", plotit = TRUE)
+#plot(model1)
+
+#Shuffling data for dealing with autocorrelation
 
 shuffled_data= data[sample(1:nrow(data)), ]
 model1 <- lm(PCREV~BED+MCDAYS+home+outgoings+RURAL+finance, data=shuffled_data)
 summary(model1)
 
 
-#Centralizing
+#Centralizing because b0 does not make sense even it is statistically significant
 model1 <- lm(PCREV~scale(BED,scale = F)+scale(MCDAYS,scale = F)+scale(home,scale = F)+scale(outgoings,scale = F)+RURAL+finance, data=shuffled_data)
 names(model1)
 summary(model1)
@@ -504,8 +456,9 @@ acf(model1$residuals)
 
 tab_model(model1)
 
+#Selection Techniques
 
-#Subset Selection
+#Subset Selection 
 model1 <- regsubsets(PCREV~scale(BED,scale = F)+scale(MCDAYS,scale = F)+scale(home,scale = F)+scale(outgoings,scale = F)+RURAL+finance, data=shuffled_data, nvmax = 5)
 res.sum <- summary(model1)
 data.frame(
@@ -536,10 +489,11 @@ points(cp_min, res.sum$cp[cp_min], col = "red", cex = 2, pch = 20)
 plot(res.sum$bic, xlab = "Number of Variables", ylab = "BIC", type = "l")
 bic_min = which.min(res.sum$bic) # 6
 points(bic_min, res.sum$bic[bic_min], col = "red", cex = 2, pch = 20)
-#We see that according to BIC, the best performer is the model with 4 variables. According to  Cp , 5 variables. Adjusted  R2  suggests that 5 might be best. Again, no one measure is going to give us an entirely accurate picture... 
+#We saw that according to BIC, the best performer is the model with 4 variables. According to  Cp , 5 variables. Adjusted  R2  suggests that 5 might be best. Again, no one measure is going to give us an entirely accurate picture... 
 #but they all agree that a model with 4 or fewer predictors is insufficient, and a model with more than 6 is overfitting.
 
-#stepwise regression
+
+#Stepwise Regression
 intercept_only <- lm(PCREV ~ 1, data=shuffled_data)
 
 #define model with all predictors
@@ -569,8 +523,6 @@ tab_model(model1)
 
 
 
-#WS EDW CHECKED
-
 ################################################3
 
 #Model 2 || outgoings
@@ -592,7 +544,7 @@ acf(model2$residuals)
 
 
 
-
+#We used log to deal with the absence of homoscedasticity
 model2 <- lm(log(outgoings)~MCDAYS+home+PCREV+RURAL+finance, data=shuffled_data)
 summary(model2)
 
@@ -635,6 +587,8 @@ points(bic_min, res.sum$bic[bic_min], col = "red", cex = 2, pch = 20)
 #but they all agree that a model with 4 or fewer predictors is insufficient, and a model with more than 6 is overfitting.
 
 
+
+#Stepwise Regression
 intercept_only <- lm(log(outgoings) ~ 1, data=shuffled_data)
 
 #define model with all predictors
@@ -666,7 +620,7 @@ model3 <- lm(profit~BED+MCDAYS+home+PCREV+RURAL+finance+outgoings, data=data)
 names(model3)
 summary(model3)
 
-##elegxos kanonikothtas
+#Normality Test
 shapiro.test(model3$res)
 # p-value < 0.05 implying that the distribution of the data are significantly different from the normal distribution. 
 durbinWatsonTest(model3)
@@ -678,12 +632,15 @@ plot(model3)
 plot(model3$residuals,type = 'l')
 acf(model3$residuals)
 
-model3 <- boxCox(model3, family="yjPower", plotit = TRUE)
+#model3 <- boxCox(model3, family="yjPower", plotit = TRUE)
+
+#The problem with this model is that it is overfitted, so we chose many techniques to deal with it.
+#First of all, we tried to transform out Y variable using log but the R-squared is still equals to 1.
 
 model3 <- lm(log(profit)~PCREV+RURAL+finance+outgoings, data=shuffled_data)
 summary(model3)
 
-#Centralizing
+#Then we tried to centralize our variables but we had no changes.
 model3 <- lm(log(profit)~scale(BED,scale = F)+scale(MCDAYS,scale = F)+scale(home,scale = F)+scale(PCREV,scale = F)+RURAL+finance+scale(outgoings,scale = F), data=shuffled_data)
 names(model3)
 summary(model3)
@@ -694,6 +651,7 @@ acf(model3$residuals)
 
 tab_model(model3)
 
+#Then we used selection variables techniques 
 model3 <- regsubsets(log(profit)~scale(PCREV,scale = F)+RURAL+finance+scale(outgoings,scale = F), data=shuffled_data, nvmax = 5)
 res.sum <- summary(model3)
 data.frame(
@@ -727,7 +685,7 @@ points(bic_min, res.sum$bic[bic_min], col = "red", cex = 2, pch = 20)
 #We see that according to BIC, the best performer is the model with 4 variables. According to  Cp , 5 variables. Adjusted  R2  suggests that 5 might be best. Again, no one measure is going to give us an entirely accurate picture... 
 #but they all agree that a model with 4 or fewer predictors is insufficient, and a model with more than 6 is overfitting.
 
-
+#Stepwise Regression
 intercept_only <- lm(log(profit) ~ 1, data=shuffled_data)
 
 #define model with all predictors
